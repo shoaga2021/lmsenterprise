@@ -24,7 +24,13 @@ defined('BASEPATH') OR exit('No direct script access allowed');
   | a PHP script and you can easily do that on your own.
   |
  */
-$config['base_url'] = 'http://localhost/school1/';
+if (getenv('APP_URL')) {
+	$config['base_url'] = rtrim(getenv('APP_URL'), '/') . '/';
+} else {
+	$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+	$host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
+	$config['base_url'] = $protocol . '://' . $host . '/';
+}
 
 
 /*

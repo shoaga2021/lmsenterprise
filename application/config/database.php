@@ -74,10 +74,11 @@ $query_builder = TRUE;
 
 $db['default'] = array(
 	'dsn'	=> '',
-	'hostname' => 'localhost',
-	'username' => 'root',
-	'password' => '',
-	'database' => 'ssnodb',
+	'hostname' => getenv('MYSQLHOST') ?: getenv('DB_HOST') ?: 'localhost',
+	'username' => getenv('MYSQLUSER') ?: getenv('DB_USER') ?: 'root',
+	'password' => getenv('MYSQLPASSWORD') ?: getenv('DB_PASS') ?: '',
+	'database' => getenv('MYSQLDATABASE') ?: getenv('DB_NAME') ?: 'ssnodb',
+	'port'     => (int)(getenv('MYSQLPORT') ?: getenv('DB_PORT') ?: 3306),
 	'dbdriver' => 'mysqli',
 	'dbprefix' => '',
 	'pconnect' => FALSE,
