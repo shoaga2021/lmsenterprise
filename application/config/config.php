@@ -27,7 +27,13 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 if (getenv('APP_URL')) {
 	$config['base_url'] = rtrim(getenv('APP_URL'), '/') . '/';
 } else {
-	$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+	// Check X-Forwarded-Proto for Railway/Render reverse proxies (TLS termination at load balancer)
+	$forwarded = isset($_SERVER['HTTP_X_FORWARDED_PROTO']) ? $_SERVER['HTTP_X_FORWARDED_PROTO'] : '';
+	if ($forwarded === 'https') {
+		$protocol = 'https';
+	} else {
+		$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+	}
 	$host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
 	$config['base_url'] = $protocol . '://' . $host . '/';
 }
