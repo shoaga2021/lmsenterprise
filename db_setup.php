@@ -27,10 +27,16 @@ if (!file_exists($sql_file)) {
 
 $sql = file_get_contents($sql_file);
 
-// Split into individual statements
+// Split into individual statements, stripping SQL line comments first
 $statements = array_filter(
-    array_map('trim', explode(';', $sql)),
-    fn($s) => strlen($s) > 5 && strpos($s, '--') !== 0
+    array_map(function($s) {
+        $lines = array_filter(
+            explode("\n", trim($s)),
+            fn($l) => strpos(trim($l), '--') !== 0 && strpos(trim($l), '---') !== 0
+        );
+        return trim(implode("\n", $lines));
+    }, explode(';', $sql)),
+    fn($s) => strlen($s) > 5
 );
 
 $ok = 0; $errors = [];
