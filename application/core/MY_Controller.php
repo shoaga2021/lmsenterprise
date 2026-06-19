@@ -10,6 +10,8 @@ class MY_Controller extends CI_Controller {
     public function __construct() {
 
         parent::__construct();
+        // Railway MySQL has ONLY_FULL_GROUP_BY enabled globally; clear it at session level
+        $this->db->query("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
         $this->config->load('license');
         $this->load->helper('language');
         $this->load->library('auth');
