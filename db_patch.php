@@ -43,22 +43,43 @@ $steps[] = ['Seed captcha rows', $conn->error ?: 'OK'];
 $res = $conn->query("SELECT COUNT(*) as c FROM `email_config`");
 $row = $res ? $res->fetch_assoc() : ['c' => 0];
 if ((int)$row['c'] === 0) {
-    $conn->query("INSERT INTO `email_config` (`email_type`, `is_active`) VALUES ('smtp', 'no')");
+    $conn->query("INSERT INTO `email_config` (`type`, `is_active`) VALUES ('smtp', 0)");
     $steps[] = ['Seed email_config default row', $conn->error ?: 'OK'];
 } else {
     $steps[] = ['email_config already has data', 'SKIPPED'];
 }
 
-// Fix 3: Ensure sms_config / smsgateway_setting table has a row if it exists
-$has_sms = $conn->query("SHOW TABLES LIKE 'smsgateway_setting'");
+// Fix 3: Add missing columns to front_cms_programs
+$cols = [
+    "ALTER TABLE `front_cms_programs` ADD COLUMN `type` varchar(100) DEFAULT NULL",
+    "ALTER TABLE `front_cms_programs` ADD COLUMN `created_at` datetime DEFAULT CURRENT_TIMESTAMP",
+    "ALTER TABLE `front_cms_programs` ADD COLUMN `image` varchar(255) DEFAULT NULL",
+    "ALTER TABLE `front_cms_programs` ADD COLUMN `short_description` text DEFAULT NULL",
+    "ALTER TABLE `front_cms_programs` ADD COLUMN `category_id` int(11) DEFAULT NULL",
+    "ALTER TABLE `front_cms_programs` ADD COLUMN `session_id` int(11) DEFAULT NULL",
+    "ALTER TABLE `front_cms_programs` ADD COLUMN `date` date DEFAULT NULL",
+];
+foreach ($cols as $sql) {
+    $conn->query($sql);
+    $err = $conn->error;
+    // Ignore "Duplicate column" errors — column already exists
+    if ($err && strpos($err, 'Duplicate column') === false) {
+        $steps[] = [substr($sql, 0, 60) . '...', $err];
+    } else {
+        $steps[] = [substr($sql, 0, 60) . '...', 'OK'];
+    }
+}
+
+// Fix 5: Ensure sms_config / smsgateway_setting table has a row if it exists
+$has_sms = $conn->query("SHOW TABLES LIKE 'sms_config'");
 if ($has_sms && $has_sms->num_rows > 0) {
-    $res2 = $conn->query("SELECT COUNT(*) as c FROM `smsgateway_setting`");
+    $res2 = $conn->query("SELECT COUNT(*) as c FROM `sms_config`");
     $row2 = $res2 ? $res2->fetch_assoc() : ['c' => 0];
     if ((int)$row2['c'] === 0) {
-        $conn->query("INSERT INTO `smsgateway_setting` (`gateway`, `is_active`) VALUES ('textlocal', 'no')");
-        $steps[] = ['Seed smsgateway_setting', $conn->error ?: 'OK'];
+        $conn->query("INSERT INTO `sms_config` (`type`, `is_active`) VALUES ('textlocal', 0)");
+        $steps[] = ['Seed sms_config', $conn->error ?: 'OK'];
     } else {
-        $steps[] = ['smsgateway_setting already has data', 'SKIPPED'];
+        $steps[] = ['sms_config already has data', 'SKIPPED'];
     }
 }
 
