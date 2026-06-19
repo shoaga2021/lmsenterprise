@@ -163,6 +163,24 @@ if ($check && $check->num_rows === 0) {
     $steps[] = ['Admin user already exists', 'SKIPPED'];
 }
 
+// Fix: events table missing columns used by Calendar_model
+$event_cols = [
+    "ALTER TABLE `events` ADD COLUMN `event_type` varchar(50)  DEFAULT 'public'",
+    "ALTER TABLE `events` ADD COLUMN `event_for`  int(11)      DEFAULT 0",
+    "ALTER TABLE `events` ADD COLUMN `role_id`    int(11)      DEFAULT 0",
+    "ALTER TABLE `events` ADD COLUMN `is_active`  varchar(10)  DEFAULT 'yes'",
+    "ALTER TABLE `events` ADD COLUMN `start_date` date         DEFAULT NULL",
+];
+foreach ($event_cols as $sql) {
+    $conn->query($sql);
+    $err = $conn->error;
+    if ($err && strpos($err, 'Duplicate column') === false) {
+        $steps[] = [substr($sql, 0, 65) . '...', '❌ ' . $err];
+    } else {
+        $steps[] = [substr($sql, 0, 65) . '...', 'OK'];
+    }
+}
+
 // ── NEW FIX: roles table needs "Super Admin" so hasPrivilege() grants all access ──
 // The RBAC library checks: if role name == 'Super Admin' → grant everything
 // Original schema seeded id=1 as 'Admin' — rename it to 'Super Admin'.
