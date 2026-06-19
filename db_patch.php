@@ -163,6 +163,105 @@ if ($check && $check->num_rows === 0) {
     $steps[] = ['Admin user already exists', 'SKIPPED'];
 }
 
+// ── NEW FIX: roles table needs "Super Admin" so hasPrivilege() grants all access ──
+// The RBAC library checks: if role name == 'Super Admin' → grant everything
+// Original schema seeded id=1 as 'Admin' — rename it to 'Super Admin'.
+$conn->query("UPDATE `roles` SET `name` = 'Super Admin' WHERE `id` = 1 AND `name` = 'Admin'");
+$steps[] = ['Rename role id=1 to Super Admin (RBAC bypass)', $conn->affected_rows > 0 ? 'OK (renamed)' : ($conn->error ?: 'SKIPPED (already named Super Admin)')];
+
+// ── NEW FIX: permission_group (modules) table – seed all modules as active ──
+// Module_lib loads from permission_group; if empty, hasActive() always returns
+// false and every dashboard widget/sidebar section is hidden.
+$modules = [
+    ['front_office',        0, 1, 0, 0],
+    ['student_information', 0, 1, 0, 0],
+    ['online_admission',    0, 1, 0, 0],
+    ['multi_class',         0, 1, 0, 0],
+    ['fees_collection',     0, 1, 0, 0],
+    ['income',              0, 1, 0, 0],
+    ['expense',             0, 1, 0, 0],
+    ['student_attendance',  0, 1, 0, 0],
+    ['examination',         0, 1, 0, 0],
+    ['online_examination',  0, 1, 0, 0],
+    ['lesson_plan',         0, 1, 0, 0],
+    ['academics',           0, 1, 0, 0],
+    ['human_resource',      0, 1, 0, 0],
+    ['communicate',         0, 1, 0, 0],
+    ['zoom_live_classes',   0, 1, 0, 0],
+    ['gmeet_live_classes',  0, 1, 0, 0],
+    ['download_center',     0, 1, 0, 0],
+    ['homework',            0, 1, 0, 0],
+    ['library',             0, 1, 0, 0],
+    ['inventory',           0, 1, 0, 0],
+    ['transport',           0, 1, 0, 0],
+    ['hostel',              0, 1, 0, 0],
+    ['certificate',         0, 1, 0, 0],
+    ['front_cms',           0, 1, 0, 0],
+    ['alumni',              0, 1, 0, 0],
+    ['reports',             0, 1, 0, 0],
+    ['system_settings',     1, 1, 0, 0],
+    ['calendar_to_do_list', 0, 1, 0, 0],
+    ['chat',                0, 1, 0, 0],
+    ['fees',                0, 1, 1, 1],
+    ['attendance',          0, 1, 1, 1],
+    ['examinations',        0, 1, 1, 1],
+    ['notice_board',        0, 1, 1, 1],
+    ['teachers_rating',     0, 1, 1, 0],
+    ['transport_routes',    0, 1, 1, 1],
+    ['hostel_rooms',        0, 1, 1, 0],
+    ['class_timetable',     0, 1, 1, 0],
+    ['syllabus_status',     0, 1, 1, 0],
+    ['apply_leave',         0, 1, 1, 0],
+    ['live_classes',        0, 1, 1, 0],
+];
+foreach ($modules as [$sc, $sys, $active, $stu, $par]) {
+    $existing = $conn->query("SELECT id FROM `permission_group` WHERE `short_code` = '$sc' LIMIT 1");
+    if ($existing && $existing->num_rows === 0) {
+        $conn->query("INSERT INTO `permission_group` (`short_code`,`system`,`is_active`,`student`,`parent`) VALUES ('$sc',$sys,$active,$stu,$par)");
+        $err = $conn->error;
+        $steps[] = ["Seed module: $sc", $err ?: 'OK'];
+    } else {
+        $steps[] = ["Module already exists: $sc", 'SKIPPED'];
+    }
+}
+
+// ── NEW FIX: sch_settings default row ──
+// getSetting() / get() do INNER JOIN sessions+languages on sch_settings.
+// If the table is empty those queries return null and the dashboard fatals.
+$chk = $conn->query("SELECT COUNT(*) as c FROM `sch_settings`");
+$cnt = $chk ? $chk->fetch_assoc()['c'] : 0;
+if ((int)$cnt === 0) {
+    $conn->query("INSERT INTO `sch_settings`
+        (`name`,`email`,`phone`,`address`,`session_id`,`lang_id`,
+         `currency`,`currency_symbol`,`currency_place`,
+         `date_format`,`time_format`,`timezone`,
+         `start_month`,`start_week`,`theme`,
+         `attendence_type`,`is_rtl`,`class_teacher`,
+         `adm_prefix`,`adm_start_from`,`adm_no_digit`,
+         `adm_update_status`,`adm_auto_insert`,
+         `staffid_prefix`,`staffid_start_from`,`staffid_no_digit`,
+         `staffid_update_status`,`staffid_auto_insert`,
+         `online_admission`,`is_duplicate_fees_invoice`,
+         `is_student_house`,`is_blood_group`,`roll_no`,
+         `student_profile_edit`,`fee_due_days`)
+      VALUES
+        ('Smart School','admin@school.com','','',1,1,
+         'USD','$','before',
+         'd-m-Y','h:i A','UTC',
+         1,'Sunday','default',
+         0,'disabled','no',
+         'ADM',1,4,
+         0,0,
+         'STAFF',1,4,
+         0,0,
+         0,0,
+         0,0,0,
+         0,0)");
+    $steps[] = ['Seed sch_settings default row', $conn->error ?: 'OK'];
+} else {
+    $steps[] = ['sch_settings already has data', 'SKIPPED'];
+}
+
 $conn->close();
 ?>
 <!DOCTYPE html>
