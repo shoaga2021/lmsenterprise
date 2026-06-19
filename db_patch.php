@@ -126,6 +126,26 @@ foreach ($alter_stmts as $sql) {
     }
 }
 
+// Fix: books and book_issues missing columns
+$book_alters = [
+    // books — model uses book_title, book_no, postdate; schema has title only
+    "ALTER TABLE `books` ADD COLUMN `book_title` varchar(255) DEFAULT NULL",
+    "ALTER TABLE `books` ADD COLUMN `book_no` varchar(50) DEFAULT NULL",
+    "ALTER TABLE `books` ADD COLUMN `postdate` date DEFAULT NULL",
+    // book_issues — model uses is_returned, duereturn_date; schema has return_status
+    "ALTER TABLE `book_issues` ADD COLUMN `is_returned` tinyint(1) NOT NULL DEFAULT 0",
+    "ALTER TABLE `book_issues` ADD COLUMN `duereturn_date` date DEFAULT NULL",
+];
+foreach ($book_alters as $sql) {
+    $conn->query($sql);
+    $err = $conn->error;
+    if ($err && strpos($err, 'Duplicate column') === false) {
+        $steps[] = [substr($sql, 0, 65) . '...', '❌ ' . $err];
+    } else {
+        $steps[] = [substr($sql, 0, 65) . '...', 'OK'];
+    }
+}
+
 // Fix: Create admin user (skip if email already exists)
 $admin_email = 'admin@school.com';
 $admin_pass  = password_hash('admin123', PASSWORD_DEFAULT);
