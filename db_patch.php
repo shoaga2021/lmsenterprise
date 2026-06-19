@@ -83,6 +83,49 @@ if ($has_sms && $has_sms->num_rows > 0) {
     }
 }
 
+// Fix: Correct column names and add missing columns to income / expenses / enquiry
+$alter_stmts = [
+    // income table — model uses inc_head_id, schema had income_head_id
+    "ALTER TABLE `income` ADD COLUMN `inc_head_id` int(11) DEFAULT NULL",
+    "ALTER TABLE `income` ADD COLUMN `name` varchar(150) DEFAULT NULL",
+    "ALTER TABLE `income` ADD COLUMN `invoice_no` varchar(50) DEFAULT NULL",
+    "ALTER TABLE `income` ADD COLUMN `documents` varchar(255) DEFAULT NULL",
+    "ALTER TABLE `income` ADD COLUMN `note` text DEFAULT NULL",
+    "ALTER TABLE `income` ADD COLUMN `session_id` int(11) DEFAULT NULL",
+    "ALTER TABLE `income` ADD COLUMN `feetype_id` int(11) DEFAULT NULL",
+    "ALTER TABLE `income` ADD COLUMN `class_id` int(11) DEFAULT NULL",
+    // income_head — model selects income_head.class
+    "ALTER TABLE `income_head` ADD COLUMN `class` tinyint(1) DEFAULT 0",
+    // expenses table — model uses exp_head_id, schema had expense_head_id
+    "ALTER TABLE `expenses` ADD COLUMN `exp_head_id` int(11) DEFAULT NULL",
+    "ALTER TABLE `expenses` ADD COLUMN `name` varchar(150) DEFAULT NULL",
+    "ALTER TABLE `expenses` ADD COLUMN `invoice_no` varchar(50) DEFAULT NULL",
+    "ALTER TABLE `expenses` ADD COLUMN `documents` varchar(255) DEFAULT NULL",
+    "ALTER TABLE `expenses` ADD COLUMN `note` text DEFAULT NULL",
+    "ALTER TABLE `expenses` ADD COLUMN `session_id` int(11) DEFAULT NULL",
+    "ALTER TABLE `expenses` ADD COLUMN `feetype_id` int(11) DEFAULT NULL",
+    "ALTER TABLE `expenses` ADD COLUMN `class_id` int(11) DEFAULT NULL",
+    // enquiry — model filters by status
+    "ALTER TABLE `enquiry` ADD COLUMN `status` varchar(50) DEFAULT 'active'",
+    // student_fees — model uses amount_detail JSON field
+    "ALTER TABLE `student_fees` ADD COLUMN `amount_detail` text DEFAULT NULL",
+    "ALTER TABLE `student_fees` ADD COLUMN `created_at` datetime DEFAULT CURRENT_TIMESTAMP",
+    // student_fees_master — model uses amount, is_system, fee_amount
+    "ALTER TABLE `student_fees_master` ADD COLUMN `is_system` tinyint(1) DEFAULT 0",
+    "ALTER TABLE `student_fees_master` ADD COLUMN `fee_amount` decimal(10,2) DEFAULT 0.00",
+    "ALTER TABLE `student_fees_master` ADD COLUMN `amount_detail` text DEFAULT NULL",
+    // fee_receipt_no table might be missing rows
+];
+foreach ($alter_stmts as $sql) {
+    $conn->query($sql);
+    $err = $conn->error;
+    if ($err && strpos($err, 'Duplicate column') === false && strpos($err, 'already exists') === false) {
+        $steps[] = [substr($sql, 0, 65) . '...', '❌ ' . $err];
+    } else {
+        $steps[] = [substr($sql, 0, 65) . '...', 'OK'];
+    }
+}
+
 // Fix: Create admin user (skip if email already exists)
 $admin_email = 'admin@school.com';
 $admin_pass  = password_hash('admin123', PASSWORD_DEFAULT);
