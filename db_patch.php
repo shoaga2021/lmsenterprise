@@ -83,6 +83,23 @@ if ($has_sms && $has_sms->num_rows > 0) {
     }
 }
 
+// Fix: Create admin user (skip if email already exists)
+$admin_email = 'admin@school.com';
+$admin_pass  = password_hash('admin123', PASSWORD_DEFAULT);
+$check = $conn->query("SELECT id FROM `staff` WHERE email = '$admin_email' LIMIT 1");
+if ($check && $check->num_rows === 0) {
+    $conn->query("INSERT INTO `staff` (`name`, `email`, `password`, `is_active`, `gender`) VALUES ('Administrator', '$admin_email', '$admin_pass', 1, 'Male')");
+    $staff_id = $conn->insert_id;
+    if ($staff_id) {
+        $conn->query("INSERT INTO `staff_roles` (`staff_id`, `role_id`) VALUES ($staff_id, 1)");
+        $steps[] = ['Create admin user admin@school.com / admin123', $conn->error ?: 'OK'];
+    } else {
+        $steps[] = ['Create admin user', $conn->error ?: 'FAILED'];
+    }
+} else {
+    $steps[] = ['Admin user already exists', 'SKIPPED'];
+}
+
 $conn->close();
 ?>
 <!DOCTYPE html>
