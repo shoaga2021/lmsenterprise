@@ -328,7 +328,7 @@ $config['cache_query_string'] = FALSE;
   | https://codeigniter.com/user_guide/libraries/encryption.html
   |
  */
-$config['encryption_key'] = '';
+$config['encryption_key'] = getenv('CI_ENCRYPTION_KEY') ?: 'LMSEnterp@Railway2024!SecureKey32';
 
 /*
   |--------------------------------------------------------------------------
@@ -407,8 +407,8 @@ $config['sess_regenerate_destroy'] = FALSE;
 $config['cookie_prefix'] = '';
 $config['cookie_domain'] = '';
 $config['cookie_path'] = '/';
-$config['cookie_secure'] = FALSE;
-$config['cookie_httponly'] = FALSE;
+$config['cookie_secure'] = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+$config['cookie_httponly'] = TRUE;
 
 /*
   |--------------------------------------------------------------------------
@@ -526,5 +526,5 @@ $config['rewrite_short_tags'] = FALSE;
  */
 $config['routine_session'] = 16;
 $config['routine_update'] = 1529539200;
-$config['proxy_ips'] = '';
+$config['proxy_ips'] = '10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16';
 $config['installed'] = true;

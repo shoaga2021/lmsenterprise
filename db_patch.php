@@ -24,8 +24,12 @@ $steps = [];
 
 // ── CI3 database-session table ─────────────────────────────────────────────────
 // Must exist before any request tries to read/write the session.
+// DROP + RECREATE so a stale schema (e.g. wrong PRIMARY KEY) can't cause a
+// login loop. Existing sessions are invalid after an encryption_key change anyway.
+$conn->query("DROP TABLE IF EXISTS `ci_sessions`");
+$steps[] = ['Drop old ci_sessions table', $conn->error ?: 'OK'];
 $conn->query("
-CREATE TABLE IF NOT EXISTS `ci_sessions` (
+CREATE TABLE `ci_sessions` (
     `id`         VARCHAR(128)     NOT NULL,
     `ip_address` VARCHAR(45)      NOT NULL,
     `timestamp`  INT(10) UNSIGNED NOT NULL DEFAULT 0,
@@ -34,7 +38,7 @@ CREATE TABLE IF NOT EXISTS `ci_sessions` (
     KEY `ci_sessions_timestamp` (`timestamp`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 ");
-$steps[] = ['Create ci_sessions table', $conn->error ?: 'OK'];
+$steps[] = ['Create ci_sessions table (fresh)', $conn->error ?: 'OK'];
 
 // ── Seed languages (id=1 English) — required by sch_settings INNER JOIN ───────
 // Setting_model::get() does INNER JOIN languages on sch_settings.lang_id.
