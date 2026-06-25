@@ -162,7 +162,8 @@ class Storage_lib
 
     // ── Internals ──────────────────────────────────────────────────────────────
 
-    private function local_copy(string $source, string $key): string|false
+    /** @return string|false */
+    private function local_copy(string $source, string $key)
     {
         $dest = FCPATH . 'uploads/' . ltrim($key, '/');
         $dir  = dirname($dest);
