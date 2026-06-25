@@ -80,12 +80,10 @@ class Admin extends Admin_Controller
 
         $data['total_students'] = $total_students;
 
-        $tot_roles = $this->role_model->get();
-
+        $tot_roles   = $this->role_model->get();
+        $count_roles = [];
         foreach ($tot_roles as $key => $value) {
-
             $count_roles[$value["name"]] = $this->role_model->count_roles($value["id"]);
-
         }
         $data["roles"] = $count_roles;
 
@@ -226,7 +224,10 @@ class Admin extends Admin_Controller
 
         $data['incomegraph'] = $this->income_model->getIncomeHeadsData($start_date, $end_date);
         $data['expensegraph'] = $this->expense_model->getExpenseHeadData($start_date, $end_date);
-        $enquiry       = $this->admin_model->getAllEnquiryCount($start_date, $end_date);
+        $enquiry = $this->admin_model->getAllEnquiryCount($start_date, $end_date);
+        if (empty($enquiry)) {
+            $enquiry = ['total' => 0, 'complete' => 0, 'active' => 0, 'passive' => 0, 'dead' => 0, 'lost' => 0];
+        }
         $total_counter = $total_paid + $total_unpaid + $total_partial;
 
         $data['fees_overview'] = array(
@@ -314,8 +315,13 @@ class Admin extends Admin_Controller
             'forreturn'         => $forreturn,
         );
 
-        $Attendence                   = $this->stuattendence_model->getTodayDayAttendance($total_students);
-        $data['attendence_data']      = $Attendence;
+        $Attendence = $this->stuattendence_model->getTodayDayAttendance($total_students ?: 1);
+        $data['attendence_data'] = $Attendence ?: [
+            'present'       => '0%', 'late'       => '0%',
+            'absent'        => '0%', 'half_day'   => '0%',
+            'total_present' => 0,    'total_late' => 0,
+            'total_absent'  => 0,    'total_half_day' => 0,
+        ];
         $Staffattendence              = $this->Staff_model->getTodayDayAttendance();
         $data['Staffattendence_data'] = $Staffattendence;
         $getTotalStaff                = $this->Staff_model->getTotalStaff();

@@ -36,6 +36,28 @@ CREATE TABLE IF NOT EXISTS `ci_sessions` (
 ");
 $steps[] = ['Create ci_sessions table', $conn->error ?: 'OK'];
 
+// ── Seed languages (id=1 English) — required by sch_settings INNER JOIN ───────
+// Setting_model::get() does INNER JOIN languages on sch_settings.lang_id.
+// If the row is absent the JOIN returns no rows and every $result[0] fatals.
+$res_lang = $conn->query("SELECT COUNT(*) as c FROM `languages` WHERE id = 1");
+$cnt_lang  = $res_lang ? $res_lang->fetch_assoc()['c'] : 0;
+if ((int)$cnt_lang === 0) {
+    $conn->query("INSERT INTO `languages` (`id`,`language`,`short_code`,`is_rtl`) VALUES (1,'English','en',0)");
+    $steps[] = ['Seed languages id=1 (English)', $conn->error ?: 'OK'];
+} else {
+    $steps[] = ['languages id=1 already exists', 'SKIPPED'];
+}
+
+// ── Seed sessions (id=1 2024-25) — required by sch_settings INNER JOIN ────────
+$res_ses = $conn->query("SELECT COUNT(*) as c FROM `sessions` WHERE id = 1");
+$cnt_ses  = $res_ses ? $res_ses->fetch_assoc()['c'] : 0;
+if ((int)$cnt_ses === 0) {
+    $conn->query("INSERT INTO `sessions` (`id`,`session`,`is_active`) VALUES (1,'2024-25',1)");
+    $steps[] = ['Seed sessions id=1 (2024-25)', $conn->error ?: 'OK'];
+} else {
+    $steps[] = ['sessions id=1 already exists', 'SKIPPED'];
+}
+
 // Fix 1: Drop and recreate captcha table with correct schema
 $conn->query("DROP TABLE IF EXISTS `captcha`");
 $steps[] = ['Drop old captcha table', $conn->error ?: 'OK'];
