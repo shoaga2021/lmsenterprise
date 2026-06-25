@@ -150,7 +150,7 @@ $config['subclass_prefix'] = 'MY_';
   | Note: This will NOT disable or override the CodeIgniter-specific
   |	autoloading (application/config/autoload.php)
  */
-$config['composer_autoload'] = FALSE;
+$config['composer_autoload'] = TRUE;
 
 /*
   |--------------------------------------------------------------------------
@@ -381,10 +381,10 @@ $config['encryption_key'] = '';
   | except for 'cookie_prefix' and 'cookie_httponly', which are ignored here.
   |
  */
-$config['sess_driver'] = 'files';
+$config['sess_driver'] = 'database';
 $config['sess_cookie_name'] = 'ci_session';
 $config['sess_expiration'] = 7200;
-$config['sess_save_path'] = sys_get_temp_dir();
+$config['sess_save_path'] = 'ci_sessions'; // table name
 $config['sess_match_ip'] = FALSE;
 $config['sess_time_to_update'] = 300;
 $config['sess_regenerate_destroy'] = FALSE;

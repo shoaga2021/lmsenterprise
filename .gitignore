@@ -1,0 +1,21 @@
+# Composer dependencies — never commit these; Railway installs them at build time
+vendor/
+
+# CI3 writable directories
+application/cache/*
+application/logs/*
+uploads/*
+
+# Keep the directory structure
+!application/cache/.gitkeep
+!application/logs/.gitkeep
+!uploads/.gitkeep
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# OS noise
+.DS_Store
+Thumbs.db

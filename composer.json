@@ -1,0 +1,9 @@
+{
+    "require": {
+        "aws/aws-sdk-php": "^3.0"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}

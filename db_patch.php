@@ -22,6 +22,20 @@ $conn->set_charset('utf8mb3');
 
 $steps = [];
 
+// ── CI3 database-session table ─────────────────────────────────────────────────
+// Must exist before any request tries to read/write the session.
+$conn->query("
+CREATE TABLE IF NOT EXISTS `ci_sessions` (
+    `id`         VARCHAR(128)     NOT NULL,
+    `ip_address` VARCHAR(45)      NOT NULL,
+    `timestamp`  INT(10) UNSIGNED NOT NULL DEFAULT 0,
+    `data`       BLOB             NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `ci_sessions_timestamp` (`timestamp`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+");
+$steps[] = ['Create ci_sessions table', $conn->error ?: 'OK'];
+
 // Fix 1: Drop and recreate captcha table with correct schema
 $conn->query("DROP TABLE IF EXISTS `captcha`");
 $steps[] = ['Drop old captcha table', $conn->error ?: 'OK'];

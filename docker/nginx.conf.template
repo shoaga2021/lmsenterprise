@@ -1,0 +1,73 @@
+# docker/nginx.conf.template
+# ── envsubst replaces ${PORT} at container start; all other $variables
+#    (nginx internals like $uri, $query_string) are left untouched because
+#    the start command passes '$PORT' as the explicit substitution list.
+
+worker_processes auto;
+error_log  /dev/stderr warn;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include      /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    access_log /dev/stdout;
+
+    sendfile           on;
+    keepalive_timeout  65;
+    client_max_body_size 64M;
+
+    gzip            on;
+    gzip_types      text/plain text/css application/json
+                    application/javascript text/xml application/xml
+                    application/xml+rss text/javascript;
+
+    # ── HTTPS detection ───────────────────────────────────────────────────────
+    # Railway terminates TLS at its load balancer and forwards X-Forwarded-Proto.
+    # We map that header to PHP's HTTPS server variable so CI3 can build
+    # correct https:// base URLs without the "mixed content" bug.
+    map $http_x_forwarded_proto $fastcgi_https {
+        https on;
+        default '';
+    }
+
+    server {
+        listen ${PORT};
+        server_name _;
+        root  /app;
+        index index.php;
+
+        # ── CI3 clean-URL routing ─────────────────────────────────────────────
+        # Try the exact URI as a file, then as a directory, then hand to
+        # CodeIgniter's front controller.
+        location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+
+        # ── PHP-FPM ───────────────────────────────────────────────────────────
+        location ~ \.php$ {
+            try_files      $uri =404;
+            fastcgi_pass   127.0.0.1:9000;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+            fastcgi_param  HTTPS            $fastcgi_https;
+            fastcgi_read_timeout 300s;
+            include        fastcgi_params;
+        }
+
+        # ── Security: block CI3 internals ─────────────────────────────────────
+        location ~* ^/(application|system|vendor)/ { return 403; }
+        location ~ /\.                             { return 403; }
+
+        # ── Static asset caching ──────────────────────────────────────────────
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+            try_files $uri =404;
+        }
+    }
+}
